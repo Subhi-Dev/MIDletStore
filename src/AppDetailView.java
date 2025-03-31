@@ -47,9 +47,9 @@ public class AppDetailView extends Canvas {
     
     // Colors
     private static final int COLOR_BACKGROUND = 0xF0F0F0;
-    private static final int COLOR_HEADER = 0x2980B9;
+    private static final int COLOR_HEADER = 0xEC3750;
     private static final int COLOR_TEXT = 0x2C3E50;
-    private static final int COLOR_HIGHLIGHT = 0x3498DB;
+    private static final int COLOR_HIGHLIGHT = 0xE83F56;
     private static final int COLOR_WHITE = 0xFFFFFF;
     private static final int COLOR_LIGHT_GRAY = 0xD3D3D3;
     private static final int COLOR_GRAY = 0x7F8C8D;
@@ -120,9 +120,17 @@ public class AppDetailView extends Canvas {
                 InputStream is = null;
                 
                 try {
-                    // Format URL for app details
-                    String appId = app.getDownloadUrl().substring(app.getDownloadUrl().lastIndexOf('/') + 1);
+                    // Format URL for app details using app ID instead of index
+                    String appId = app.getId();
                     String detailsUrl = "http://localhost:3000/storeapi/apps/" + appId;
+                    
+                    // Include device info in the request
+                    if (midletStore != null) {
+                        String deviceInfo = midletStore.getDeviceQueryString();
+                        if (deviceInfo != null && deviceInfo.length() > 0) {
+                            detailsUrl += (detailsUrl.indexOf('?') >= 0 ? "&" : "?") + deviceInfo;
+                        }
+                    }
                     
                     connection = (HttpConnection) Connector.open(detailsUrl);
                     
@@ -357,12 +365,32 @@ public class AppDetailView extends Canvas {
         // Left column
         g.drawString("Size", leftColX, infoY, Graphics.TOP | Graphics.LEFT);
         g.drawString("Version", leftColX, infoY + 20, Graphics.TOP | Graphics.LEFT);
+        g.drawString("Compatibility", leftColX, infoY + 40, Graphics.TOP | Graphics.LEFT); // New row
         
         // Right column
         g.drawString(size != null ? size : "Unknown", rightColX, infoY, Graphics.TOP | Graphics.LEFT);
         g.drawString(version != null ? version : "1.0", rightColX, infoY + 20, Graphics.TOP | Graphics.LEFT);
         
-        y += 140; // Move down past info section
+        // Draw the supported status with appropriate color based on the value
+        String status = app.getSupportedStatus();
+        if (status == null) status = "Unknown";
+        
+        if (status.equals("fully_supported")) {
+            g.setColor(0x00AA00); // Green for fully supported
+            g.drawString("Fully Supported", rightColX, infoY + 40, Graphics.TOP | Graphics.LEFT);
+        } else if (status.equals("partially_supported")) {
+            g.setColor(0xFFAA00); // Orange for partially supported
+            g.drawString("Partially Supported", rightColX, infoY + 40, Graphics.TOP | Graphics.LEFT);
+        } else if (status.equals("not_supported")) {
+            g.setColor(0xAA0000); // Red for not supported
+            g.drawString("Not Supported", rightColX, infoY + 40, Graphics.TOP | Graphics.LEFT);
+        } else {
+            g.setColor(COLOR_GRAY); // Gray for unknown
+            g.drawString(status, rightColX, infoY + 40, Graphics.TOP | Graphics.LEFT);
+        }
+        g.setColor(COLOR_TEXT); // Reset color
+        
+        y += 160; // Increase height to accommodate the new row
         
         // Description section
         g.setColor(COLOR_WHITE);

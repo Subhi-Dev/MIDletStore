@@ -34,8 +34,11 @@ public class StoreCanvas extends Canvas {
     private static final int COLOR_HEADER = 0xEC3750;
     private static final int COLOR_CAROUSEL_BG = 0xFFC7CE;
     private static final int COLOR_TEXT = 0x2C3E50;
-    private static final int COLOR_HIGHLIGHT = 0x3498DB;
+    private static final int COLOR_HIGHLIGHT = 0xE83F56;
     private static final int COLOR_WHITE = 0xFFFFFF;
+    private static final int COLOR_GRAY = 0xAAAAAA;
+    private static final int COLOR_UPVOTE = 0x27AE60;  // Green for upvotes
+    private static final int COLOR_DOWNVOTE = 0xC0392B; // Red for downvotes
     
     // Layout variables
     private int width, height;
@@ -453,6 +456,49 @@ public class StoreCanvas extends Canvas {
             Image icon = (Image) appIcons.elementAt(i);
             if (icon == null) icon = defaultAppIcon;
             g.drawImage(icon, x, y + ITEM_HEIGHT / 2, Graphics.VCENTER | Graphics.HCENTER);
+            
+            // Use a different visual indicator for compatibility status
+            // Add a small colored dot or border to indicate compatibility
+            if (info.getSupportedStatus() != null) {
+                String status = info.getSupportedStatus();
+                int indicatorColor = COLOR_GRAY;
+                
+                if (status.equals("fully_supported")) {
+                    indicatorColor = 0x00AA00; // Green for fully supported
+                } else if (status.equals("partially_supported")) {
+                    indicatorColor = 0xFFAA00; // Orange for partially supported
+                } else if (status.equals("not_supported")) {
+                    indicatorColor = 0xAA0000; // Red for not supported
+                }
+                
+                // Draw a small indicator dot in the top-right corner
+                g.setColor(indicatorColor);
+                g.fillRect(x + ITEM_WIDTH / 2 - 5, y, 5, 5);
+            }
+            
+            // Draw vote count indicator in the bottom right of the icon area
+            int votes = info.getVotes();
+            if (votes != 0) {
+                int indicatorSize = 6;
+                int indicatorX = x + ITEM_WIDTH / 2 - 8;
+                int indicatorY = y + ITEM_HEIGHT - 8;
+                
+                if (votes > 0) {
+                    g.setColor(COLOR_UPVOTE);
+                    g.fillTriangle(
+                        indicatorX + indicatorSize / 2, indicatorY,
+                        indicatorX + indicatorSize, indicatorY + indicatorSize,
+                        indicatorX, indicatorY + indicatorSize
+                    );
+                } else {
+                    g.setColor(COLOR_DOWNVOTE);
+                    g.fillTriangle(
+                        indicatorX, indicatorY,
+                        indicatorX + indicatorSize, indicatorY,
+                        indicatorX + indicatorSize / 2, indicatorY + indicatorSize
+                    );
+                }
+            }
             
             // Draw app name
             g.setColor(COLOR_TEXT);

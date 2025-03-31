@@ -19,10 +19,7 @@ import javax.microedition.lcdui.Image;
 
 import javax.microedition.m2g.SVGImage;
 import javax.microedition.m2g.SVGAnimator;
-
-
 import javax.microedition.m2g.ScalableImage;
-import javax.microedition.m2g.SVGAnimator;
 
 import com.sun.svg.component.LoadingScreen;
 import com.sun.svg.util.DefaultSVGAnimator;
@@ -38,11 +35,16 @@ public class MIDletStore extends MIDlet implements CommandListener {
     private boolean isLoading;
     private String csvUrl = "http://localhost:3000/storeapi/apps"; // Default URL, can be configured
     private AppDetailView appDetailView;
+    private String deviceId = null;
+    private String supportedAPIs = null;
     
     public void startApp() {
         display = Display.getDisplay(this);
         
         if (storeCanvas == null) {
+            // Initialize device information
+            initDeviceInfo();
+            
             // Initialize commands
             exitCommand = new Command("Exit", Command.EXIT, 1);
             selectCommand = new Command("Select", Command.ITEM, 1);
@@ -87,6 +89,113 @@ public class MIDletStore extends MIDlet implements CommandListener {
                 installMidlet(appInfo);
             }
         }
+    }
+    
+    /**
+     * Initialize device information including unique ID and supported JSRs
+     */
+    private void initDeviceInfo() {
+        // Get unique device identifier
+        // Try several common system properties to find a suitable device ID
+        deviceId = getSystemProperty("com.nokia.mid.imei"); // Nokia IMEI
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = getSystemProperty("com.sonyericsson.imei"); // Sony Ericsson IMEI
+        }
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = getSystemProperty("phone.imei"); // Generic IMEI
+        }
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = getSystemProperty("com.motorola.IMEI"); // Motorola IMEI
+        }
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = getSystemProperty("device.id"); // Generic device ID
+        }
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = getSystemProperty("microedition.platform"); // Platform info as fallback
+        }
+        
+        if (deviceId == null || deviceId.length() == 0) {
+            deviceId = "unknown"; // Last resort fallback
+        }
+        
+        // Build list of supported JSR APIs
+        StringBuffer apiBuffer = new StringBuffer();
+        
+        // Check for common JSRs (Mobile Service Architecture specifications)
+        checkJSR(apiBuffer, "JSR30", "javax.microedition.io.file.FileConnection"); // File Connection API
+        checkJSR(apiBuffer, "JSR75", "javax.microedition.io.file.FileConnection"); // PDA Optional Packages
+        checkJSR(apiBuffer, "JSR82", "javax.bluetooth.LocalDevice"); // Bluetooth API
+        checkJSR(apiBuffer, "JSR118", "javax.microedition.midlet.MIDlet"); // MIDP 2.0
+        checkJSR(apiBuffer, "JSR120", "javax.wireless.messaging.Message"); // Wireless Messaging API
+        checkJSR(apiBuffer, "JSR135", "javax.microedition.media.Player"); // Mobile Media API
+        checkJSR(apiBuffer, "JSR172", "javax.xml.parsers.SAXParser"); // Web Services
+        checkJSR(apiBuffer, "JSR177", "javax.microedition.securityservice.CMSMessageSignatureService"); // Security and Trust
+        checkJSR(apiBuffer, "JSR179", "javax.microedition.location.Location"); // Location API
+        checkJSR(apiBuffer, "JSR180", "javax.microedition.sip.SipConnection"); // SIP API
+        checkJSR(apiBuffer, "JSR184", "javax.microedition.m3g.Graphics3D"); // Mobile 3D Graphics
+        checkJSR(apiBuffer, "JSR205", "javax.wireless.messaging.MessageConnection"); // Wireless Messaging API 2.0
+        checkJSR(apiBuffer, "JSR211", "javax.microedition.content.Invocation"); // Content Handler API
+        checkJSR(apiBuffer, "JSR226", "javax.microedition.m2g.SVGImage"); // Scalable 2D Vector Graphics
+        checkJSR(apiBuffer, "JSR234", "javax.microedition.amms.control.audioeffect.EqualizerControl"); // Advanced Multimedia Supplements
+        checkJSR(apiBuffer, "JSR238", "javax.microedition.global.Formatter"); // Mobile Internationalization API
+        checkJSR(apiBuffer, "JSR239", "javax.microedition.khronos.egl.EGL"); // Java Binding for OpenGL ES
+        checkJSR(apiBuffer, "JSR256", "javax.microedition.sensor.SensorConnection"); // Mobile Sensor API
+        checkJSR(apiBuffer, "JSR280", "javax.microedition.contactless.ContactlessException"); // Contactless Communication API
+        checkJSR(apiBuffer, "JSR281", "javax.microedition.contactless.ndef.NDEFMessage"); // IMS Services API
+        checkJSR(apiBuffer, "JSR293", "javax.microedition.location.LandmarkStore"); // Location API 2.0
+        
+        // Store detected JSRs
+        supportedAPIs = apiBuffer.toString();
+        if (supportedAPIs.length() > 0) {
+            // Remove trailing comma
+            supportedAPIs = supportedAPIs.substring(0, supportedAPIs.length() - 1);
+        } else {
+            supportedAPIs = "none";
+        }
+        
+        System.out.println("Device ID: " + deviceId);
+        System.out.println("Supported APIs: " + supportedAPIs);
+    }
+    
+    /**
+     * Check if a specific JSR is supported and add it to the buffer if found
+     */
+    private void checkJSR(StringBuffer buffer, String jsrName, String testClass) {
+        try {
+            Class.forName(testClass);
+            buffer.append(jsrName).append(",");
+        } catch (ClassNotFoundException e) {
+            // JSR not supported, do nothing
+        } catch (Exception e) {
+            // Other error, assume not supported
+        }
+    }
+    
+    /**
+     * Safely get a system property with fallback to empty string
+     */
+    private String getSystemProperty(String key) {
+        try {
+            return System.getProperty(key);
+        } catch (SecurityException e) {
+            // Access to the property might be restricted
+            return "";
+        }
+    }
+    
+    /**
+     * Get device information as a query string
+     */
+    public String getDeviceQueryString() {
+        if (deviceId != null && supportedAPIs != null) {
+            return "device=" + encode(deviceId) + "&jsrs=" + encode(supportedAPIs);
+        }
+        return "";
     }
     
     private void showLoadingScreen() {
@@ -144,7 +253,15 @@ public class MIDletStore extends MIDlet implements CommandListener {
                 InputStream is = null;
                 
                 try {
-                    connection = (HttpConnection) Connector.open(csvUrl);
+                    // Append device info and supported JSRs to request URL
+                    String apiUrl = csvUrl;
+                    if (apiUrl.indexOf('?') >= 0) {
+                        apiUrl += "&device=" + encode(deviceId) + "&jsrs=" + encode(supportedAPIs);
+                    } else {
+                        apiUrl += "?device=" + encode(deviceId) + "&jsrs=" + encode(supportedAPIs);
+                    }
+                    
+                    connection = (HttpConnection) Connector.open(apiUrl);
                     if (connection.getResponseCode() == HttpConnection.HTTP_OK) {
                         is = connection.openInputStream();
                         parseCsvData(is);
@@ -168,6 +285,38 @@ public class MIDletStore extends MIDlet implements CommandListener {
         t.start();
     }
     
+    /**
+     * Simple URL encoding method (J2ME doesn't have java.net.URLEncoder)
+     */
+    private String encode(String input) {
+        if (input == null) return "";
+        
+        StringBuffer result = new StringBuffer();
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || 
+                c == '-' || c == '_' || c == '.' || c == '~') {
+                // These characters are allowed in a URL without encoding
+                result.append(c);
+            } else if (c == ' ') {
+                result.append('+');
+            } else {
+                // Encode other characters as %XX hex values
+                result.append('%');
+                result.append(toHex((c >> 4) & 0xF));
+                result.append(toHex(c & 0xF));
+            }
+        }
+        return result.toString();
+    }
+    
+    /**
+     * Convert a nibble to a hex character
+     */
+    private char toHex(int nibble) {
+        return "0123456789ABCDEF".charAt(nibble);
+    }
+    
     private void parseCsvData(InputStream is) throws IOException {
         InputStreamReader isr = new InputStreamReader(is);
         StringBuffer sb = new StringBuffer();
@@ -189,16 +338,27 @@ public class MIDletStore extends MIDlet implements CommandListener {
     }
     
     private void processCsvLine(String line) {
-        // Expected CSV format: name,description,iconUrl,downloadUrl,isFeatured
+        // Expected CSV format: id,name,description,iconUrl,downloadUrl,isFeatured,supportedStatus,votes
         String[] parts = split(line, ',');
-        if (parts.length >= 5) {
-            String name = parts[0];
-            String description = parts[1];
-            String iconUrl = parts[2];
-            String downloadUrl = parts[3];
-            boolean isFeatured = "true".equalsIgnoreCase(parts[4]);
+        if (parts.length >= 8) {  // Updated to check for at least 8 fields including votes
+            String id = parts[0];
+            String name = parts[1];
+            String description = parts[2];
+            String iconUrl = parts[3];
+            String downloadUrl = parts[4];
+            boolean isFeatured = "true".equalsIgnoreCase(parts[5]);
+            String supportedStatus = parts[6];
+            int votes = 0;
             
-            MidletInfo info = new MidletInfo(name, description, iconUrl, downloadUrl, isFeatured);
+            try {
+                votes = Integer.parseInt(parts[7]); // Parse votes as integer
+            } catch (NumberFormatException e) {
+                // If parsing fails, default to 0 votes
+                votes = 0;
+            }
+            
+            MidletInfo info = new MidletInfo(id, name, description, iconUrl, downloadUrl, 
+                                              isFeatured, supportedStatus, votes);
             midletsList.addElement(info);
             
             if (isFeatured) {
@@ -258,24 +418,33 @@ public class MIDletStore extends MIDlet implements CommandListener {
     /**
      * Install a midlet
      */
-    public void installMidlet(MidletInfo info) {
+    public void installMidlet(final MidletInfo info) {
         Alert alert = new Alert("Installing", "Starting download of " + info.getName() + "...", null, AlertType.INFO);
         alert.setTimeout(3000); // Set a 3-second timeout instead of FOREVER
         
         // Fix: Return to store canvas after installation instead of detail view
         display.setCurrent(alert, storeCanvas);
         
-        // In a real app, you would start the actual download and installation here
-    }
-    
-    private void showMidletDetails(MidletInfo info) {
-        Form detailsForm = new Form(info.getName());
-        detailsForm.append(info.getDescription() + "\n");
-        detailsForm.append("URL: " + info.getDownloadUrl());
-        detailsForm.addCommand(backCommand);
-        detailsForm.addCommand(new Command("Download", Command.ITEM, 1));
-        detailsForm.setCommandListener(this);
-        display.setCurrent(detailsForm);
+        // Start a thread to handle the download and installation
+        Thread downloader = new Thread() {
+            public void run() {
+                try {
+                    // Try to launch the device's browser with the download URL
+                    String platformRequest = info.getDownloadUrl();
+                    if (platformRequest(platformRequest)) {
+                        // platformRequest returns true if the MIDlet will be terminated
+                        destroyApp(false);
+                        notifyDestroyed();
+                    }
+                } catch (Exception e) {
+                    // Handle errors during the download process
+                    Alert errorAlert = new Alert("Error", "Failed to open download: " + e.getMessage(), null, AlertType.ERROR);
+                    errorAlert.setTimeout(Alert.FOREVER);
+                    display.setCurrent(errorAlert, storeCanvas);
+                }
+            }
+        };
+        downloader.start();
     }
     
     private void handleError(String message) {
@@ -307,25 +476,35 @@ public class MIDletStore extends MIDlet implements CommandListener {
     
     // Inner class to hold MIDlet information
     class MidletInfo {
+        private String id;
         private String name;
         private String description;
         private String iconUrl;
         private String downloadUrl;
         private boolean featured;
+        private String supportedStatus;
+        private int votes; // Changed from float rating to int votes
         
-        public MidletInfo(String name, String description, String iconUrl, String downloadUrl, boolean featured) {
+        public MidletInfo(String id, String name, String description, String iconUrl, 
+                          String downloadUrl, boolean featured, String supportedStatus, int votes) {
+            this.id = id;
             this.name = name;
             this.description = description;
             this.iconUrl = iconUrl;
             this.downloadUrl = downloadUrl;
             this.featured = featured;
+            this.supportedStatus = supportedStatus;
+            this.votes = votes;
         }
         
+        public String getId() { return id; }
         public String getName() { return name; }
         public String getDescription() { return description; }
         public String getIconUrl() { return iconUrl; }
         public String getDownloadUrl() { return downloadUrl; }
         public boolean isFeatured() { return featured; }
+        public String getSupportedStatus() { return supportedStatus; }
+        public int getVotes() { return votes; } // Changed from getRating to getVotes
         
         public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
     }
