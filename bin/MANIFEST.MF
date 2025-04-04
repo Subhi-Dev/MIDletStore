@@ -1,4 +1,4 @@
-MIDlet-1: MIDletStore, MIDletStore.png, MIDletStore
+MIDlet-1: HackMIDletStore, MIDletStore.png, MIDletStore
 MIDlet-Name: MIDletStore
 MIDlet-Vendor: Unknown
 MIDlet-Version: 1.0

@@ -22,7 +22,7 @@ public class StoreCanvas extends Canvas {
     private static final int ITEM_WIDTH = 80;
     private static final int ITEM_HEIGHT = 80;
     private static final int ITEM_SPACING = 10;
-    private static final int ITEMS_PER_ROW = 3;
+    private static final int ITEMS_PER_ROW = 2;
     private static final int VISIBLE_ROWS = 3;
     
     // Animation-related constants
@@ -79,7 +79,7 @@ public class StoreCanvas extends Canvas {
         // Initialize dimensions
         this.width = getWidth();
         this.height = getHeight();
-        this.gridStartY = HEADER_HEIGHT + CAROUSEL_HEIGHT + 20;
+        this.gridStartY = HEADER_HEIGHT + CAROUSEL_HEIGHT + 25;
         
         // Setup icons placeholder
         for (int i = 0; i < midletsList.size(); i++) {
@@ -146,6 +146,7 @@ public class StoreCanvas extends Canvas {
             // Check if the URL is valid before attempting connection
             if (info.getIconUrl() == null || info.getIconUrl().trim().length() == 0) {
                 appIcons.setElementAt(defaultAppIcon, index);
+                midletStore.setAppIcon(index, defaultAppIcon); // Add this line
                 return;
             }
             
@@ -170,33 +171,41 @@ public class StoreCanvas extends Canvas {
                             try {
                                 Image icon = Image.createImage(imageData, 0, imageData.length);
                                 appIcons.setElementAt(icon, index);
+                                midletStore.setAppIcon(index, icon); // Add this line
                                 repaint();
                             } catch (IllegalArgumentException iae) {
                                 System.out.println("Invalid image format: " + iae.toString());
                                 appIcons.setElementAt(defaultAppIcon, index);
+                                midletStore.setAppIcon(index, defaultAppIcon); // Add this line
                             }
                         } else {
                             System.out.println("Empty image data received");
                             appIcons.setElementAt(defaultAppIcon, index);
+                            midletStore.setAppIcon(index, defaultAppIcon); // Add this line
                         }
                     } catch (Exception e) {
                         System.out.println("Error processing image: " + e.toString());
                         appIcons.setElementAt(defaultAppIcon, index);
+                        midletStore.setAppIcon(index, defaultAppIcon); // Add this line
                     }
                 } else {
                     System.out.println("Non-image content type: " + contentType);
                     appIcons.setElementAt(defaultAppIcon, index);
+                    midletStore.setAppIcon(index, defaultAppIcon); // Add this line
                 }
             } else {
                 System.out.println("Failed to load icon: HTTP " + responseCode);
                 appIcons.setElementAt(defaultAppIcon, index);
+                midletStore.setAppIcon(index, defaultAppIcon); // Add this line
             }
         } catch (IOException ioe) {
             System.out.println("Icon loading failed: " + ioe.toString());
             appIcons.setElementAt(defaultAppIcon, index);
+            midletStore.setAppIcon(index, defaultAppIcon); // Add this line
         } catch (Exception e) {
             System.out.println("Unexpected error loading icon: " + e.toString());
             appIcons.setElementAt(defaultAppIcon, index);
+            midletStore.setAppIcon(index, defaultAppIcon); // Add this line
         } finally {
             try {
                 if (is != null) is.close();
@@ -403,7 +412,7 @@ public class StoreCanvas extends Canvas {
         // Section title
         g.setColor(COLOR_TEXT);
         g.setFont(deriveFont(Font.STYLE_PLAIN));
-        g.drawString("All Applications", 10, gridStartY - 15, Graphics.TOP | Graphics.LEFT);
+        g.drawString("All Applications", 10, gridStartY - 20, Graphics.TOP | Graphics.LEFT);
         
         // No apps
         if (midletsList.size() == 0) {
@@ -473,15 +482,15 @@ public class StoreCanvas extends Canvas {
                 
                 // Draw a small indicator dot in the top-right corner
                 g.setColor(indicatorColor);
-                g.fillRect(x + ITEM_WIDTH / 2 - 5, y, 5, 5);
+                g.fillRect(x + ITEM_WIDTH / 2 - 10, y, 10, 10);
             }
             
             // Draw vote count indicator in the bottom right of the icon area
             int votes = info.getVotes();
             if (votes != 0) {
-                int indicatorSize = 6;
-                int indicatorX = x + ITEM_WIDTH / 2 - 8;
-                int indicatorY = y + ITEM_HEIGHT - 8;
+                int indicatorSize = 10;
+                int indicatorX = x + ITEM_WIDTH / 2 - indicatorSize - 1;
+                int indicatorY = y + ITEM_HEIGHT - indicatorSize  - 1;
                 
                 if (votes > 0) {
                     g.setColor(COLOR_UPVOTE);

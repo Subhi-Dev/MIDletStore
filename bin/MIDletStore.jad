@@ -1,5 +1,5 @@
-MIDlet-1: MIDletStore, MIDletStore.png, MIDletStore
-MIDlet-Jar-Size: 100
+MIDlet-1: HackMIDletStore, MIDletStore.png, MIDletStore
+MIDlet-Jar-Size: 46204
 MIDlet-Jar-URL: MIDletStore.jar
 MIDlet-Name: MIDletStore
 MIDlet-Vendor: Unknown

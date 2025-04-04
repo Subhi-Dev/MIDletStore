@@ -4,12 +4,12 @@
   <rect width="240" height="320" fill="#f0f0f0"/>
   
   <!-- Header -->
-  <rect width="240" height="30" fill="#2980b9"/>
+  <rect width="240" height="30" fill="#EC3750"/>
   <text x="120" y="20" font-family="sans-serif" font-size="16" text-anchor="middle" fill="white">Hack MIDlet Store</text>
   
   <!-- Featured Apps Carousel -->
   <g id="carousel" transform="translate(0, 40)">
-    <rect width="240" height="80" fill="#3498db" opacity="0.3"/>
+    <rect width="240" height="80" fill="#FFC7CE" opacity="0.3"/>
     <text x="10" y="-5" font-family="sans-serif" font-size="12" fill="#2c3e50">Featured Apps</text>
     
     <!-- Carousel Items -->
